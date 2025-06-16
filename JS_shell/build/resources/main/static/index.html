@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>JS Shell</title>
+    <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script>
+    <style>
+        html, body {
+          margin: 0;
+          height: 100%;
+          font-family: "JetBrains Mono", monospace;
+          background: #1e1e1e;
+          color: white;
+          overflow: hidden;
+        }
+
+        .toolbar {
+          background: #2d2d2d;
+          padding: 10px;
+          display: flex;
+          gap: 10px;
+        }
+
+        .toolbar button {
+          background-color: #007acc;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 8px 16px;
+          cursor: pointer;
+        }
+
+        .toolbar button:hover {
+          background-color: #005fa3;
+        }
+
+        .main {
+          display: flex;
+          height: calc(100% - 50px);
+        }
+
+        #editor-container {
+          width: 50%;
+          height: 100%;
+        }
+
+        #terminal {
+          width: 50%;
+          padding: 10px;
+          background: #151515;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          box-sizing: border-box;
+        }
+
+        #resizer {
+          width: 5px;
+          background: #444;
+          cursor: col-resize;
+        }
+
+        #resizer:hover {
+          background: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button id="run-button">▶ Run</button>
+    <button id="clear-button">🧹 Clear</button>
+</div>
+
+<div class="main">
+    <div id="editor-container"></div>
+    <div id="resizer"></div>
+    <div id="terminal">Console output will appear here...</div>
+</div>
+
+<script>
+    // Monaco Editor loader
+    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.33.0/min/vs' }});
+    require(['vs/editor/editor.main'], function () {
+      window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+        value: `console.log("Hello world");`,
+        language: 'javascript',
+        theme: 'vs-dark',
+        fontSize: 14,
+      });
+    });
+
+    // Terminal output
+    const terminal = document.getElementById("terminal");
+
+    document.getElementById("run-button").onclick = () => {
+      const code = window.editor.getValue();
+      try {
+        const result = eval(code);
+        terminal.innerText += "\n> " + result;
+      } catch (e) {
+        terminal.innerText += "\nError: " + e.message;
+      }
+      terminal.scrollTop = terminal.scrollHeight;
+    };
+
+    document.getElementById("clear-button").onclick = () => {
+      terminal.innerText = '';
+    };
+
+    // Resizer logic
+    const resizer = document.getElementById("resizer");
+    const left = document.getElementById("editor-container");
+    const right = document.getElementById("terminal");
+    const container = document.querySelector(".main");
+
+    let isDragging = false;
+
+    resizer.addEventListener("mousedown", () => {
+      isDragging = true;
+      document.body.style.cursor = 'col-resize';
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const containerRect = container.getBoundingClientRect();
+      const total = containerRect.width;
+      let x = e.clientX - containerRect.left;
+      if (x < total * 0.1) x = total * 0.1;
+      if (x > total * 0.9) x = total * 0.9;
+      const percent = (x / total) * 100;
+      left.style.width = percent + "%";
+      right.style.width = (100 - percent) + "%";
+      if (window.editor) window.editor.layout();
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+</script>
+
+</body>
+</html>
